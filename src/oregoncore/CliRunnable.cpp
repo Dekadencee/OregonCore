@@ -675,6 +675,7 @@ void CliRunnable::run()
     // Init new SQL thread for the world database (one connection call enough)
     WorldDatabase.ThreadStart();                                // let thread do safe mySQL requests
 
+	char commandbuf[256];
     // Display the list of available CLI functions then beep
     sLog.outString();
     #if PLATFORM != WINDOWS
@@ -683,9 +684,6 @@ void CliRunnable::run()
     if (sConfig.GetBoolDefault("BeepAtStart", true))
         printf("\a");                                       // \a = Alert
 
-    #if PLATFORM == PLATFORM_WINDOWS
-    char commnadbuf[256];
-    #endif
     // print this here the first time
     // later it will be printed after command queue updates
     printf("Oregon>");

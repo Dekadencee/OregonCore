@@ -263,7 +263,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
         if (Player* modOwner = spell->GetCaster()->GetSpellModOwner())
             modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell);
 
-        if (!(spellInfo->Attributes & (SPELL_ATTR_UNK4|SPELL_ATTR_TRADESPELL)))
+        if (!(spellInfo->Attributes & (SPELL_ATTR0_ABILITY|SPELL_ATTR0_TRADESPELL)))
             castTime = int32(castTime * spell->GetCaster()->GetFloatValue(UNIT_MOD_CAST_SPEED));
         else
         {
@@ -272,7 +272,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
         }
     }
 
-    if (spellInfo->Attributes & SPELL_ATTR_RANGED && (!spell || !spell->IsAutoRepeat()))
+    if (spellInfo->Attributes & SPELL_ATTR0_REQ_AMMO && (!spell || !spell->IsAutoRepeat()))
         castTime += 500;
 
     return (castTime > 0) ? uint32(castTime) : 0;
@@ -288,7 +288,7 @@ bool IsPassiveSpell(uint32 spellId)
 
 bool IsPassiveSpell(SpellEntry const * spellInfo)
 {
-    if (spellInfo->Attributes & SPELL_ATTR_PASSIVE)
+    if (spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
         return true;
     return false;
 }
@@ -298,9 +298,9 @@ bool IsAutocastableSpell(uint32 spellId)
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
     if (!spellInfo)
         return false;
-    if (spellInfo->Attributes & SPELL_ATTR_PASSIVE)
+    if (spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
         return false;
-    if (spellInfo->AttributesEx & SPELL_ATTR_EX_UNAUTOCASTABLE_BY_PET)
+    if (spellInfo->AttributesEx & SPELL_ATTR1_UNAUTOCASTABLE_BY_PET)
         return false;
     return true;
 }
@@ -308,7 +308,7 @@ bool IsAutocastableSpell(uint32 spellId)
 uint32 CalculatePowerCost(SpellEntry const * spellInfo, Unit const * caster, SpellSchoolMask schoolMask)
 {
     // Spell drain all exist power on cast (Only paladin lay of Hands)
-    if (spellInfo->AttributesEx & SPELL_ATTR_EX_DRAIN_ALL_POWER)
+    if (spellInfo->AttributesEx & SPELL_ATTR1_DRAIN_ALL_POWER)
     {
         // If power type - health drain all
         if (spellInfo->powerType == POWER_HEALTH)
@@ -349,13 +349,13 @@ uint32 CalculatePowerCost(SpellEntry const * spellInfo, Unit const * caster, Spe
     // Flat mod from caster auras by spell school
     powerCost += caster->GetInt32Value(UNIT_FIELD_POWER_COST_MODIFIER + school);
     // Shiv - costs 20 + weaponSpeed*10 energy (apply only to non-triggered spell with energy cost)
-    if (spellInfo->AttributesEx4 & SPELL_ATTR_EX4_SPELL_VS_EXTEND_COST)
+    if (spellInfo->AttributesEx4 & SPELL_ATTR4_SPELL_VS_EXTEND_COST)
         powerCost += caster->GetAttackTime(OFF_ATTACK)/100;
     // Apply cost mod by spell
     if (Player* modOwner = caster->GetSpellModOwner())
         modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_COST, powerCost);
 
-    if (spellInfo->Attributes & SPELL_ATTR_LEVEL_DAMAGE_CALCULATION)
+    if (spellInfo->Attributes & SPELL_ATTR0_LEVEL_DAMAGE_CALCULATION)
         powerCost = int32(powerCost/ (1.117f* spellInfo->spellLevel / caster->getLevel() -0.1327f));
 
     // PCT mod from user auras by school
@@ -413,7 +413,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
                         return SPELL_FOOD;
             }
             // this may be a hack
-            else if ((spellInfo->AttributesEx2 & SPELL_ATTR_EX2_FOOD)
+            else if ((spellInfo->AttributesEx2 & SPELL_ATTR2_FOOD_BUFF)
                 && !spellInfo->Category)
                 return SPELL_WELL_FED;
 
@@ -746,7 +746,7 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                     if (spellproto->EffectImplicitTargetA[effIndex] != TARGET_UNIT_CASTER)
                         return false;
                     // but not this if this first effect (didn't find better check)
-                    if (spellproto->Attributes & SPELL_ATTR_NEGATIVE_1 && effIndex == 0)
+                    if (spellproto->Attributes & SPELL_ATTR0_NEGATIVE_1 && effIndex == 0)
                         return false;
                     break;
                 case SPELL_AURA_TRANSFORM:
@@ -820,7 +820,7 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
         return false;
 
     // AttributesEx check
-    if (spellproto->AttributesEx & SPELL_ATTR_EX_NEGATIVE)
+    if (spellproto->AttributesEx & SPELL_ATTR1_CANT_BE_REFLECTED)
         return false;
 
     // ok, positive
@@ -847,7 +847,7 @@ bool IsPositiveSpell(uint32 spellId)
 bool IsSingleTargetSpell(SpellEntry const *spellInfo)
 {
     // all other single target spells have if it has AttributesEx5
-    if (spellInfo->AttributesEx5 & SPELL_ATTR_EX5_SINGLE_TARGET_SPELL)
+    if (spellInfo->AttributesEx5 & SPELL_ATTR5_SINGLE_TARGET_SPELL)
         return true;
 
     // TODO - need found Judgements rule
@@ -932,7 +932,7 @@ uint8 GetErrorAtShapeshiftedCast (SpellEntry const *spellInfo, uint32 form)
 
     if (actAsShifted)
     {
-        if (spellInfo->Attributes & SPELL_ATTR_NOT_SHAPESHIFT) // not while shapeshifted
+        if (spellInfo->Attributes & SPELL_ATTR0_NOT_SHAPESHIFT) // not while shapeshifted
             return SPELL_FAILED_NOT_SHAPESHIFT;
         else if (spellInfo->Stances != 0)                   // needs other shapeshift
             return SPELL_FAILED_ONLY_SHAPESHIFT;
@@ -940,7 +940,7 @@ uint8 GetErrorAtShapeshiftedCast (SpellEntry const *spellInfo, uint32 form)
     else
     {
         // needs shapeshift
-        if (!(spellInfo->AttributesEx2 & SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT) && spellInfo->Stances != 0)
+        if (!(spellInfo->AttributesEx2 & SPELL_ATTR2_NOT_NEED_SHAPESHIFT) && spellInfo->Stances != 0)
             return SPELL_FAILED_ONLY_SHAPESHIFT;
     }
 
@@ -2337,7 +2337,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 }
         }
         if (auraSpell)
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_SPELL;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_SPELL;
 
         for (uint32 j = 0; j < 3; ++j)
         {
@@ -2346,18 +2346,18 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_PERIODIC_DAMAGE:
                 case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
                 case SPELL_AURA_PERIODIC_LEECH:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_DOT;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_DOT;
                     break;
                 case SPELL_AURA_PERIODIC_HEAL:
                 case SPELL_AURA_OBS_MOD_HEALTH:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_HOT;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_HOT;
                     break;
                 case SPELL_AURA_MOD_ROOT:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_CC;
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_MOVEMENT_IMPAIR;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_CC;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_MOVEMENT_IMPAIR;
                     break;
                 case SPELL_AURA_MOD_DECREASE_SPEED:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_MOVEMENT_IMPAIR;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_MOVEMENT_IMPAIR;
                     break;
                 default:
                     break;
@@ -2371,12 +2371,12 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
                 case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
                 case SPELL_EFFECT_HEAL:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_DIRECT_DAMAGE;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_DIRECT_DAMAGE;
                     break;
                 case SPELL_EFFECT_CHARGE:
                     if (!spellInfo->speed && !spellInfo->SpellFamilyName)
                         spellInfo->speed = SPEED_CHARGE;
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_CHARGE;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_CHARGE;
                     break;
                 case SPELL_EFFECT_TRIGGER_SPELL:
                     if (IsPositionTarget(spellInfo->EffectImplicitTargetA[j]) ||
@@ -2395,21 +2395,21 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_MOD_CHARM:
                 case SPELL_AURA_MOD_FEAR:
                 case SPELL_AURA_MOD_STUN:
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_CC;
-                    mSpellCustomAttr[i] &= ~SPELL_ATTR_CU_MOVEMENT_IMPAIR;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_CC;
+                    mSpellCustomAttr[i] &= ~SPELL_ATTR0_CU_MOVEMENT_IMPAIR;
                     break;
             }
         }
 
         if (spellInfo->SpellVisual == 3879)
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_CONE_BACK;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_CONE_BACK;
 
         switch(i)
         {
         case 26029: // dark glare
         case 37433: // spout
         case 43140: case 43215: // flame breath
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_CONE_LINE;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_CONE_LINE;
             break;
         case 24340: case 26558: case 28884:     // Meteor
         case 36837: case 38903: case 41276:     // Meteor
@@ -2419,7 +2419,7 @@ void SpellMgr::LoadSpellCustomAttr()
         case 40810: case 43267: case 43268:     // Saber Lash
         case 42384:                             // Brutal Swipe
         case 45150:                             // Meteor Slash
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_SHARE_DAMAGE;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_SHARE_DAMAGE;
             switch(i) // Saber Lash Targets
             {
             case 40810:             spellInfo->MaxAffectedTargets = 3; break;
@@ -2467,7 +2467,7 @@ void SpellMgr::LoadSpellCustomAttr()
             break;
         case 8122: case 8124: case 10888: case 10890: // Psychic Scream
         case 12494: // Frostbite
-            spellInfo->Attributes |= SPELL_ATTR_BREAKABLE_BY_DAMAGE;
+            spellInfo->Attributes |= SPELL_ATTR0_HEARTBEAT_RESIST_CHECK;
             break;
         case 38794: case 33711: //Murmur's Touch
             spellInfo->MaxAffectedTargets = 1;
@@ -2478,8 +2478,8 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->Effect[1] = 0;
             break;
         case 12723: // Sweeping Strikes proc
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_IGNORE_ARMOR;
-            spellInfo->Attributes |= SPELL_ATTR_IMPOSSIBLE_DODGE_PARRY_BLOCK;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_IGNORE_ARMOR;
+            spellInfo->Attributes |= SPELL_ATTR0_IMPOSSIBLE_DODGE_PARRY_BLOCK;
             break;
         case 24905: // Moonkin form -> elune's touch
             spellInfo->EffectImplicitTargetA[2] = TARGET_UNIT_CASTER;
@@ -2510,11 +2510,11 @@ void SpellMgr::LoadSpellCustomAttr()
             spellInfo->rangeIndex = 13;
             break;
         case 34580:
-            mSpellCustomAttr[i] |= SPELL_ATTR_CU_IGNORE_ARMOR;
+            mSpellCustomAttr[i] |= SPELL_ATTR0_CU_IGNORE_ARMOR;
             break;
         case 6774:
-            spellInfo->AttributesEx3 |= SPELL_ATTR_EX3_NO_INITIAL_AGGRO; // slice and dice no longer gives combat or remove stealth
-            spellInfo->AttributesEx |= SPELL_ATTR_EX_NOT_BREAK_STEALTH;
+            spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO; // slice and dice no longer gives combat or remove stealth
+            spellInfo->AttributesEx |= SPELL_ATTR1_NOT_BREAK_STEALTH;
             break;
         case 29200: // Purify Helboar Meat
             spellInfo->EffectImplicitTargetA[0] = TARGET_UNIT_CASTER;
@@ -2531,14 +2531,14 @@ void SpellMgr::LoadSpellCustomAttr()
             case SPELLFAMILY_WARRIOR:
                 // Shout
                 if (spellInfo->SpellFamilyFlags & 0x0000000000020000LL)
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_CC;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_CC;
                 break;
             case SPELLFAMILY_DRUID:
                 // Roar
                 if (spellInfo->SpellFamilyFlags & 0x0000000800000000LL)
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_AURA_CC;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_AURA_CC;
                 else if (spellInfo->SpellFamilyFlags & 0x1000LL)
-                    mSpellCustomAttr[i] |= SPELL_ATTR_CU_IGNORE_ARMOR;
+                    mSpellCustomAttr[i] |= SPELL_ATTR0_CU_IGNORE_ARMOR;
                 break;
         }
     }
@@ -2590,14 +2590,14 @@ void SpellMgr::LoadSpellLinked()
         {
             switch(type)
             {
-                case 0: mSpellCustomAttr[trigger] |= SPELL_ATTR_CU_LINK_CAST; break;
-                case 1: mSpellCustomAttr[trigger] |= SPELL_ATTR_CU_LINK_HIT;  break;
-                case 2: mSpellCustomAttr[trigger] |= SPELL_ATTR_CU_LINK_AURA; break;
+                case 0: mSpellCustomAttr[trigger] |= SPELL_ATTR0_CU_LINK_CAST; break;
+                case 1: mSpellCustomAttr[trigger] |= SPELL_ATTR0_CU_LINK_HIT;  break;
+                case 2: mSpellCustomAttr[trigger] |= SPELL_ATTR0_CU_LINK_AURA; break;
             }
         }
         else
         {
-            mSpellCustomAttr[-trigger] |= SPELL_ATTR_CU_LINK_REMOVE;
+            mSpellCustomAttr[-trigger] |= SPELL_ATTR0_CU_LINK_REMOVE;
         }
 
         if (type) //we will find a better way when more types are needed
