@@ -675,7 +675,7 @@ void CliRunnable::run()
     // Init new SQL thread for the world database (one connection call enough)
     WorldDatabase.ThreadStart();                                // let thread do safe mySQL requests
 
-	char commandbuf[256];
+    char commandbuf[256];
     // Display the list of available CLI functions then beep
     sLog.outString();
     #if PLATFORM != WINDOWS
