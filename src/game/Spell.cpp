@@ -3468,7 +3468,7 @@ uint8 Spell::CanCast(bool strict)
     if (strict && !m_IsTriggeredSpell)
     {
         // Cannot be used in this stance/form
-        if (uint8 shapeError = GetErrorAtShapeshiftedCast(m_spellInfo, m_caster->m_form))
+        if (uint8 shapeError = GetErrorAtShapeshiftedCast(m_spellInfo, m_caster->GetShapeshiftForm()))
             return shapeError;
 
         if ((m_spellInfo->Attributes & SPELL_ATTR0_ONLY_STEALTHED) && !(m_caster->HasStealthAura()))
@@ -4286,11 +4286,7 @@ uint8 Spell::CanCast(bool strict)
                 if (m_caster->GetAreaId() == 35)
                     return SPELL_FAILED_NO_MOUNTS_ALLOWED;
 
-                ShapeshiftForm form = m_caster->m_form;
-                if (form == FORM_CAT          || form == FORM_TREE      || form == FORM_TRAVEL   ||
-                    form == FORM_AQUA         || form == FORM_BEAR      || form == FORM_DIREBEAR ||
-                    form == FORM_CREATUREBEAR || form == FORM_GHOSTWOLF || form == FORM_FLIGHT   ||
-                    form == FORM_FLIGHT_EPIC  || form == FORM_MOONKIN)
+                if (m_caster->IsInDisallowedMountForm())
                     return SPELL_FAILED_NOT_SHAPESHIFT;
 
                 break;

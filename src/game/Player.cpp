@@ -1335,7 +1335,7 @@ void Player::setDeathState(DeathState s)
         clearResurrectRequestData();
 
         // remove form before other mods to prevent incorrect stats calculation
-        RemoveAurasDueToSpell(m_ShapeShiftFormSpellId);
+        this->RemoveAuraTypeByCaster(SPELL_AURA_MOD_SHAPESHIFT, 0);
 
         //FIXME: is pet dismissed at dying or releasing spirit? if second, add setDeathState(DEAD) to HandleRepopRequestOpcode and define pet unsummon here with (s == DEAD)
         RemovePet(NULL, PET_SAVE_NOT_IN_SLOT, true);
@@ -2923,19 +2923,20 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
     else if (IsPassiveSpell(spell_id))
     {
         // if spell doesn't require a stance or the player is in the required stance
+        ShapeshiftForm form = this->GetShapeshiftForm();
         if ((!spellInfo->Stances &&
             spell_id != 5420 && spell_id != 5419 && spell_id != 7376 &&
             spell_id != 7381 && spell_id != 21156 && spell_id != 21009 &&
             spell_id != 21178 && spell_id != 33948 && spell_id != 40121) ||
-            (m_form != 0 && (spellInfo->Stances & (1<<(m_form-1)))) ||
-            (spell_id == 5420 && m_form == FORM_TREE) ||
-            (spell_id == 5419 && m_form == FORM_TRAVEL) ||
-            (spell_id == 7376 && m_form == FORM_DEFENSIVESTANCE) ||
-            (spell_id == 7381 && m_form == FORM_BERSERKERSTANCE) ||
-            (spell_id == 21156 && m_form == FORM_BATTLESTANCE)||
-            (spell_id == 21178 && (m_form == FORM_BEAR || m_form == FORM_DIREBEAR)) ||
-            (spell_id == 33948 && m_form == FORM_FLIGHT) ||
-            (spell_id == 40121 && m_form == FORM_FLIGHT_EPIC))
+            (form != 0 && (spellInfo->Stances & (1<<(form-1)))) ||
+            (spell_id == 5420 && form == FORM_TREE) ||
+            (spell_id == 5419 && form == FORM_TRAVEL) ||
+            (spell_id == 7376 && form == FORM_DEFENSIVESTANCE) ||
+            (spell_id == 7381 && form == FORM_BERSERKERSTANCE) ||
+            (spell_id == 21156 && form == FORM_BATTLESTANCE)||
+            (spell_id == 21178 && (form == FORM_BEAR || form == FORM_DIREBEAR)) ||
+            (spell_id == 33948 && form == FORM_FLIGHT) ||
+            (spell_id == 40121 && form == FORM_FLIGHT_EPIC))
                                                             //Check CasterAuraStates
             if (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState)))
                 CastSpell(this, spell_id, true);
@@ -5105,7 +5106,7 @@ void Player::UpdateWeaponSkill (WeaponAttackType attType)
     if (IsInFeralForm())
         return;                                             // always maximized SKILL_FERAL_COMBAT in fact
 
-    if (m_form == FORM_TREE)
+    if (this->GetShapeshiftForm() == FORM_TREE)
         return;                                             // use weapon but not skill up
 
     uint32 weapon_skill_gain = sWorld.getConfig(CONFIG_SKILL_GAIN_WEAPON);
@@ -7184,7 +7185,7 @@ void Player::ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply
     if (apply)
     {
         // Cannot be used in this stance/form
-        if (GetErrorAtShapeshiftedCast(spellInfo, m_form) != 0)
+        if (GetErrorAtShapeshiftedCast(spellInfo, this->GetShapeshiftForm()) != 0)
             return;
 
         if (form_change)                                     // check aura active state from other form
@@ -7218,7 +7219,7 @@ void Player::ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply
         if (form_change)                                     // check aura compatibility
         {
             // Cannot be used in this stance/form
-            if (GetErrorAtShapeshiftedCast(spellInfo, m_form) == 0)
+            if (GetErrorAtShapeshiftedCast(spellInfo, this->GetShapeshiftForm()) == 0)
                 return;                                     // and remove only not compatible at form change
         }
 
@@ -17787,7 +17788,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, uint32 mount_i
         return false;
     }
 
-    if (m_ShapeShiftFormSpellId && m_form != FORM_BATTLESTANCE && m_form != FORM_BERSERKERSTANCE && m_form != FORM_DEFENSIVESTANCE && m_form != FORM_SHADOW)
+    if (IsInDisallowedMountForm())
     {
         WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
         data << uint32(ERR_TAXIPLAYERSHAPESHIFTED);
@@ -17980,10 +17981,10 @@ void Player::ContinueTaxiFlight()
 
 void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
 {
-                                                            // last check 2.0.10
+    // last check 2.0.10
     WorldPacket data(SMSG_SPELL_COOLDOWN, 8+1+m_spells.size()*8);
     data << uint64(GetGUID());
-    data << uint8(0x0);                                     // flags (0x1, 0x2)
+    data << uint8(0x0); // flags (0x1, 0x2)
     time_t curTime = time(NULL);
     for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
     {
@@ -18007,7 +18008,7 @@ void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
         if ((idSchoolMask & GetSpellSchoolMask(spellInfo)) && GetSpellCooldownDelay(unSpellId) < unTimeMs)
         {
             data << uint32(unSpellId);
-            data << uint32(unTimeMs);                       // in m.secs
+            data << uint32(unTimeMs); // in m.secs
             AddSpellCooldown(unSpellId, 0, curTime + unTimeMs/IN_MILLISECONDS);
         }
     }
@@ -18016,7 +18017,8 @@ void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
 
 void Player::InitDataForForm(bool reapplyMods)
 {
-    SpellShapeshiftEntry const* ssEntry = sSpellShapeshiftStore.LookupEntry(m_form);
+    ShapeshiftForm form = GetShapeshiftForm();
+    SpellShapeshiftEntry const* ssEntry = sSpellShapeshiftStore.LookupEntry(form);
     if (ssEntry && ssEntry->attackSpeed)
     {
         SetAttackTime(BASE_ATTACK,ssEntry->attackSpeed);
@@ -18026,7 +18028,7 @@ void Player::InitDataForForm(bool reapplyMods)
     else
         SetRegularAttackTime();
 
-    switch(m_form)
+    switch (form)
     {
         case FORM_CAT:
         {
@@ -18041,7 +18043,7 @@ void Player::InitDataForForm(bool reapplyMods)
                 setPowerType(POWER_RAGE);
             break;
         }
-        default:                                            // 0, for example
+        default: // 0, for example
         {
             ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
             if (cEntry && cEntry->powerType < MAX_POWERS && uint32(getPowerType()) != cEntry->powerType)

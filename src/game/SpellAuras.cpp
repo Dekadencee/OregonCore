@@ -2641,14 +2641,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     if (apply)
     {
         // remove other shapeshift before applying a new one
-        if (m_target->m_ShapeShiftFormSpellId)
-            m_target->RemoveAurasDueToSpell(m_target->m_ShapeShiftFormSpellId,this);
-
-        m_target->SetByteValue(UNIT_FIELD_BYTES_2, 3, form);
-        // force update as too quick shapeshifting and back
-        // causes the value to stay the same serverside
-        // causes issues clientside (player gets stuck)
-        m_target->ForceValuesUpdateAtIndex(UNIT_FIELD_BYTES_2);
+        m_target->RemoveAuraTypeByCaster(SPELL_AURA_MOD_SHAPESHIFT, 0);
 
         if (modelid > 0)
             m_target->SetDisplayId(modelid);
@@ -2659,7 +2652,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             if (m_target->getPowerType() != PowerType)
                 m_target->setPowerType(PowerType);
 
-            switch(form)
+            switch (form)
             {
                 case FORM_CAT:
                 case FORM_BEAR:
@@ -2718,8 +2711,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             }
         }
 
-        m_target->m_ShapeShiftFormSpellId = GetId();
-        m_target->m_form = form;
+        m_target->SetShapeshiftForm(form);
     }
     else
     {
@@ -2728,8 +2720,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         m_target->SetByteValue(UNIT_FIELD_BYTES_2, 3, FORM_NONE);
         if (m_target->getClass() == CLASS_DRUID)
             m_target->setPowerType(POWER_MANA);
-        m_target->m_ShapeShiftFormSpellId = 0;
-        m_target->m_form = FORM_NONE;
+        m_target->SetShapeshiftForm(FORM_NONE);
 
         switch(form)
         {

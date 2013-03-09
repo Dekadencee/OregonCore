@@ -252,7 +252,6 @@ Unit::Unit()
     m_canDualWield = false;
 
     m_state = 0;
-    m_form = FORM_NONE;
     m_deathState = ALIVE;
 
     for (uint8 i = 0; i < CURRENT_MAX_SPELL; ++i)
@@ -272,7 +271,6 @@ Unit::Unit()
     m_detectInvisibilityMask = 0;
     m_invisibilityMask = 0;
     m_transform = 0;
-    m_ShapeShiftFormSpellId = 0;
     m_canModifyStats = false;
 
     for (uint8 i = 0; i < MAX_SPELL_IMMUNITY; ++i)
@@ -1823,7 +1821,6 @@ void Unit::CalcAbsorbResist(Unit *pVictim, SpellSchoolMask schoolMask, DamageEff
         *resist = 0;
 
     int32 RemainingDamage = damage - *resist;
-
 
     // Need to remove expired auras after
     bool expiredExists = false;
@@ -5957,7 +5954,7 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 // Druid Forms Trinket
                 if (auraSpellInfo->Id == 37336)
                 {
-                    switch(m_form)
+                    switch(this->GetShapeshiftForm())
                     {
                         case 0:             trigger_spell_id = 37344;break;
                         case FORM_CAT:      trigger_spell_id = 37341;break;
@@ -9584,7 +9581,8 @@ uint32 Unit::GetCreatureType() const
 {
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        SpellShapeshiftEntry const* ssEntry = sSpellShapeshiftStore.LookupEntry(ToPlayer()->m_form);
+        ShapeshiftForm form = this->GetShapeshiftForm();
+        SpellShapeshiftEntry const* ssEntry = sSpellShapeshiftStore.LookupEntry(form);
         if (ssEntry && ssEntry->creatureType > 0)
             return ssEntry->creatureType;
         else

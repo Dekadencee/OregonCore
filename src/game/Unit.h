@@ -1289,11 +1289,30 @@ class Unit : public WorldObject
         uint32 m_detectInvisibilityMask;
         uint32 m_invisibilityMask;
 
-        uint32 m_ShapeShiftFormSpellId;
-        ShapeshiftForm m_form;
-        bool IsInFeralForm() const { return m_form == FORM_CAT || m_form == FORM_BEAR || m_form == FORM_DIREBEAR; }
-        bool IsInTravelForm() const { return m_form == FORM_TRAVEL; }
-        bool IsInFlightForm() const { return m_form == FORM_FLIGHT_EPIC || m_form == FORM_FLIGHT; }
+        ShapeshiftForm GetShapeshiftForm() const { return ShapeshiftForm(GetByteValue(UNIT_FIELD_BYTES_2, 3)); }
+        void SetShapeshiftForm(ShapeshiftForm form)
+        {
+            this->SetByteValue(UNIT_FIELD_BYTES_2, 3, form);
+
+            // force update as too quick shapeshifting and back
+            // causes the value to stay the same serverside
+            // causes issues clientside (player gets stuck)
+            this->ForceValuesUpdateAtIndex(UNIT_FIELD_BYTES_2);
+        }
+
+        inline bool IsInFeralForm() const
+        {
+            ShapeshiftForm form = this->GetShapeshiftForm();
+            return form == FORM_CAT || form == FORM_BEAR || form == FORM_DIREBEAR;
+        }
+
+        inline bool IsInDisallowedMountForm() const
+        {
+            ShapeshiftForm form = this->GetShapeshiftForm();
+            return form != FORM_NONE && form != FORM_BATTLESTANCE && form != FORM_BERSERKERSTANCE && form != FORM_DEFENSIVESTANCE &&
+                form != FORM_SHADOW;
+        }
+
         float m_modMeleeHitChance;
         float m_modRangedHitChance;
         float m_modSpellHitChance;
