@@ -17,31 +17,30 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MASTER_H
-#define _MASTER_H
+#ifndef MASTER_H
+#define MASTER_H
 
 #include "Common.h"
 #include "Policies/Singleton.h"
 
-// Start the server
 class Master
 {
     public:
-        Master();
-        ~Master();
+		Master() { }
+		~Master() { }
+
         int Run();
-        static volatile uint32 m_masterLoopCounter;
 
     private:
-        bool _StartDB();
+        bool StartDatabase();
 
-        void _HookSignals();
-        void _UnhookSignals();
-        static void _OnSignal(int s);
+        void HookSignals();
+        void UnhookSignals();
+        static void OnSignal(int s);
 
-        void clearOnlineAccounts();
+        void ClearOnlineAccounts();
 };
 
 #define sMaster Oregon::Singleton<Master>::Instance()
-#endif
 
+#endif // MASTER_H

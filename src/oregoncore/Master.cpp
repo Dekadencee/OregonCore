@@ -38,66 +38,55 @@
 #include "OCSoap.h"
 
 #ifdef _WIN32
-#include "ServiceWin32.h"
-extern int m_ServiceStatus;
+#   include "ServiceWin32.h"
+extern int ServiceStatus;
 #endif
 
 INSTANTIATE_SINGLETON_1(Master);
 
-volatile uint32 Master::m_masterLoopCounter = 0;
-
 class FreezeDetectorRunnable : public ACE_Based::Runnable
 {
 public:
-    FreezeDetectorRunnable() { _delaytime = 0; }
-    uint32 m_loops, m_lastchange;
-    uint32 w_loops, w_lastchange;
-    uint32 _delaytime;
-    void SetDelayTime(uint32 t) { _delaytime = t; }
-    void run(void)
+	FreezeDetectorRunnable() : loops_(0), lastchange_(0), delaytime_(0) { }
+
+	void run()
     {
-        if (!_delaytime)
-            return;
-        sLog.outString("Starting up anti-freeze thread (%u seconds max stuck time)...",_delaytime/1000);
-        m_loops = 0;
-        w_loops = 0;
-        m_lastchange = 0;
-        w_lastchange = 0;
+        sLog.outString("Starting up anti-freeze thread (%u seconds max stuck time)...", delaytime_ / 1000);
+
         while (!World::IsStopped())
         {
             ACE_Based::Thread::Sleep(1000);
             uint32 curtime = getMSTime();
-            // normal work
-            if (w_loops != World::m_worldLoopCounter)
+
+            // Normal work
+            if (loops_ != World::m_worldLoopCounter)
             {
-                w_lastchange = curtime;
-                w_loops = World::m_worldLoopCounter;
+                lastchange_ = curtime;
+                loops_ = World::m_worldLoopCounter;
             }
-            // possible freeze
-            else if (getMSTimeDiff(w_lastchange,curtime) > _delaytime)
+            // Possible freeze
+            else if (getMSTimeDiff(lastchange_, curtime) > delaytime_)
             {
-                sLog.outError("World Thread is stuck.  Terminating server!");
-                *((uint32 volatile*)NULL) = 0;                       // bang crash
+                sLog.outError("World thread is stuck. Terminating world server!");
+                *((uint32 volatile*)NULL) = 0; // Bang crash
             }
         }
+
         sLog.outString("Anti-freeze thread exiting without problems.");
     }
+
+	void SetDelayTime(const uint32 t) { delaytime_ = t; }
+
+private:
+    uint32 loops_, lastchange_;
+    uint32 delaytime_;
 };
-
-Master::Master()
-{
-}
-
-Master::~Master()
-{
-}
 
 // Main function
 int Master::Run()
 {
     sLog.outString("%s (core-daemon)", _FULLVERSION);
     sLog.outString("<Ctrl-C> to stop.\n");
-
     sLog.outString("  _____                                          ");
     sLog.outString(" /\\  __`\\                                        ");
     sLog.outString(" \\ \\ \\/\\ \\  _ __   __     __     ___    ___      ");
@@ -119,12 +108,11 @@ int Master::Run()
             sLog.outError("Cannot create PID file %s.\n", pidfile.c_str());
             return 1;
         }
-
         sLog.outString("Daemon PID: %u\n", pid);
     }
 
     // Start the databases
-    if (!_StartDB())
+    if (!StartDatabase())
         return 1;
 
     // Set server offline (not connectable)
@@ -134,23 +122,20 @@ int Master::Run()
     sWorld.SetInitialWorldSettings();
 
     // Catch termination signals
-    _HookSignals();
+    this->HookSignals();
 
     // Launch WorldRunnable thread
     ACE_Based::Thread world_thread(new WorldRunnable);
     world_thread.setPriority(ACE_Based::Highest);
 
+	// Launch CliRunnable thread
     ACE_Based::Thread* cliThread = NULL;
-
-#ifdef _WIN32
-    if (sConfig.GetBoolDefault("Console.Enable", true) && (m_ServiceStatus == -1)/* need disable console in service mode*/)
-#else
+    #ifdef _WIN32
+    if (sConfig.GetBoolDefault("Console.Enable", true) && (ServiceStatus == -1)/* need disable console in service mode*/)
+    #else
     if (sConfig.GetBoolDefault("Console.Enable", true))
-#endif
-    {
-        // Launch CliRunnable thread
+    #endif 
         cliThread = new ACE_Based::Thread(new CliRunnable);
-    }
 
     ACE_Based::Thread rar_thread(new RARunnable);
 
@@ -167,7 +152,7 @@ int Master::Run()
 
             if (GetProcessAffinityMask(hProcess,&appAff,&sysAff))
             {
-                ULONG_PTR curAff = Aff & appAff;            // remove non accessible processors
+                ULONG_PTR curAff = Aff & appAff; // remove non accessible processors
 
                 if (!curAff)
                 {
@@ -184,9 +169,7 @@ int Master::Run()
             sLog.outString();
         }
 
-        bool Prio = sConfig.GetBoolDefault("ProcessPriority", false);
-
-        if (Prio)
+        if (sConfig.GetBoolDefault("ProcessPriority", false))
         {
             if (SetPriorityClass(hProcess,HIGH_PRIORITY_CLASS))
                 sLog.outString("OregonCore process priority class set to HIGH");
@@ -199,23 +182,19 @@ int Master::Run()
 
     // Start soap serving thread
     ACE_Based::Thread* soap_thread = NULL;
-
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
     {
-        OCSoapRunnable *runnable = new OCSoapRunnable();
-
+        OCSoapRunnable* runnable = new OCSoapRunnable();
         runnable->setListenArguments(sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"), sConfig.GetIntDefault("SOAP.Port", 7878));
         soap_thread = new ACE_Based::Thread(runnable);
     }
-
-    //uint32 socketSelecttime = sWorld.getConfig(CONFIG_SOCKET_SELECTTIME);
 
     // Start up freeze catcher thread
     ACE_Based::Thread* freeze_thread = NULL;
     if (uint32 freeze_delay = sConfig.GetIntDefault("MaxCoreStuckTime", 0))
     {
-        FreezeDetectorRunnable *fdr = new FreezeDetectorRunnable();
-        fdr->SetDelayTime(freeze_delay*1000);
+        FreezeDetectorRunnable* fdr = new FreezeDetectorRunnable();
+        fdr->SetDelayTime(freeze_delay * 1000);
         freeze_thread = new ACE_Based::Thread(fdr);
         freeze_thread->setPriority(ACE_Based::Highest);
     }
@@ -223,12 +202,10 @@ int Master::Run()
     // Launch the world listener socket
     uint16 wsport = sWorld.getConfig(CONFIG_PORT_WORLD);
     std::string bind_ip = sConfig.GetStringDefault ("BindIP", "0.0.0.0");
-
     if (sWorldSocketMgr->StartNetwork (wsport, bind_ip.c_str ()) == -1)
     {
         sLog.outError("Failed to start network");
         World::StopNow(ERROR_EXIT_CODE);
-        // go down and shutdown the server
     }
 
     // Set server online (allow connecting now)
@@ -257,15 +234,15 @@ int Master::Run()
     LoginDatabase.PExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmID);
 
     // Remove signal handling before leaving
-    _UnhookSignals();
+    this->UnhookSignals();
 
-    // when the main thread closes the singletons get unloaded
-    // since worldrunnable uses them, it will crash if unloaded after master
+    // When the main thread closes the singletons get unloaded
+    // Since worldrunnable uses them, it will crash if unloaded after master
     world_thread.wait();
     rar_thread.wait ();
 
     // Clean account database before leaving
-    clearOnlineAccounts();
+    this->ClearOnlineAccounts();
 
     // Wait for delay threads to end
     CharacterDatabase.HaltDelayThread();
@@ -277,7 +254,6 @@ int Master::Run()
     if (cliThread)
     {
         #ifdef _WIN32
-
         // this only way to terminate CLI thread exist at Win32 (alt. way exist only in Windows Vista API)
         //_exit(1);
         // send keyboard input to safely unblock the CLI thread
@@ -312,15 +288,10 @@ int Master::Run()
         b[3].Event.KeyEvent.wRepeatCount = 1;
         DWORD numb;
         WriteConsoleInput(hStdIn, b, 4, &numb);
-
         cliThread->wait();
-
         #else
-
         cliThread->destroy();
-
         #endif
-
         delete cliThread;
     }
 
@@ -333,7 +304,7 @@ int Master::Run()
 }
 
 // Initialize connection to the databases
-bool Master::_StartDB()
+bool Master::StartDatabase()
 {
     sLog.SetLogDB(false);
 
@@ -397,58 +368,55 @@ bool Master::_StartDB()
     sLog.SetRealmID(realmID);
 
     // Clean the database before starting
-    clearOnlineAccounts();
+    this->ClearOnlineAccounts();
 
     // Insert version info into DB
     WorldDatabase.PExecute("UPDATE version SET core_version = '%s', core_revision = '%s'", _FULLVERSION, _REVISION);
 
     sWorld.LoadDBVersion();
 
-    sLog.outString("Using World DB: %s", sWorld.GetDBVersion());
+    sLog.outString("Using World Database: %s", sWorld.GetDBVersion());
     return true;
 }
 
 // Clear 'online' status for all accounts with characters in this realm
-void Master::clearOnlineAccounts()
+void Master::ClearOnlineAccounts()
 {
     // Cleanup online status for characters hosted at current realm
     // todo - Only accounts with characters logged on *this* realm should have online status reset. Move the online column from 'account' to 'realmcharacters'?
     LoginDatabase.PExecute("UPDATE account SET online = 0 WHERE online = '%d'", realmID);
-
     CharacterDatabase.Execute("UPDATE characters SET online = 0 WHERE online<>0");
 }
 
 // Handle termination signals
-void Master::_OnSignal(int s)
+void Master::OnSignal(int s)
 {
     switch (s)
     {
-        case SIGINT:
-            World::StopNow(RESTART_EXIT_CODE);
-            break;
-        case SIGTERM:
-        #ifdef _WIN32
-        case SIGBREAK:
-        #endif
-            World::StopNow(SHUTDOWN_EXIT_CODE);
-            break;
+    case SIGINT:
+        World::StopNow(RESTART_EXIT_CODE);
+        break;
+    case SIGTERM:
+    #ifdef _WIN32
+    case SIGBREAK:
+    #endif
+        World::StopNow(SHUTDOWN_EXIT_CODE);
+        break;
     }
-
-    signal(s, _OnSignal);
 }
 
-// Define hook '_OnSignal' for all termination signals
-void Master::_HookSignals()
+// Define hook 'OnSignal' for all termination signals
+void Master::HookSignals()
 {
-    signal(SIGINT, _OnSignal);
-    signal(SIGTERM, _OnSignal);
+    signal(SIGINT, OnSignal);
+    signal(SIGTERM, OnSignal);
     #ifdef _WIN32
-    signal(SIGBREAK, _OnSignal);
+    signal(SIGBREAK, OnSignal);
     #endif
 }
 
 // Unhook the signals before leaving
-void Master::_UnhookSignals()
+void Master::UnhookSignals()
 {
     signal(SIGINT, 0);
     signal(SIGTERM, 0);
@@ -456,4 +424,3 @@ void Master::_UnhookSignals()
     signal(SIGBREAK, 0);
     #endif
 }
-

@@ -22,33 +22,24 @@
 #include "Log.h"
 #include "RARunnable.h"
 #include "World.h"
-
 #include <ace/Reactor_Impl.h>
 #include <ace/TP_Reactor.h>
 #include <ace/Dev_Poll_Reactor.h>
 #include <ace/Acceptor.h>
 #include <ace/SOCK_Acceptor.h>
-
 #include "RASocket.h"
 
 RARunnable::RARunnable() : m_Reactor(NULL)
 {
     ACE_Reactor_Impl* imp = 0;
-
-#if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
-
+    #if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
     imp = new ACE_Dev_Poll_Reactor();
-
     imp->max_notify_iterations (128);
     imp->restart (1);
-
-#else
-
+    #else
     imp = new ACE_TP_Reactor();
     imp->max_notify_iterations (128);
-
-#endif
-
+    #endif
     m_Reactor = new ACE_Reactor (imp, 1);
 }
 
@@ -79,8 +70,8 @@ void RARunnable::run()
 
     while (!World::IsStopped())
     {
-        // don't be too smart to move this outside the loop
-        // the run_reactor_event_loop will modify interval
+        // Don't be too smart to move this outside the loop
+        // The run_reactor_event_loop will modify interval
         ACE_Time_Value interval(0, 100000);
 
         if (m_Reactor->run_reactor_event_loop(interval) == -1)

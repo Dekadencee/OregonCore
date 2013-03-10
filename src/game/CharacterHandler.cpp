@@ -50,8 +50,7 @@ class LoginQueryHolder : public SqlQueryHolder
         uint32 m_accountId;
         uint64 m_guid;
     public:
-        LoginQueryHolder(uint32 accountId, uint64 guid)
-            : m_accountId(accountId), m_guid(guid) { }
+        LoginQueryHolder(uint32 accountId, uint64 guid) : m_accountId(accountId), m_guid(guid) { }
         uint64 GetGuid() const { return m_guid; }
         uint32 GetAccountId() const { return m_accountId; }
         bool Initialize();
@@ -112,14 +111,15 @@ class CharacterHandler
     public:
         void HandleCharEnumCallback(QueryResult_AutoPtr result, uint32 account)
         {
-            WorldSession * session = sWorld.FindSession(account);
+            WorldSession* session = sWorld.FindSession(account);
             if (!session)
                 return;
             session->HandleCharEnum(result);
         }
         void HandlePlayerLoginCallback(QueryResult_AutoPtr /*dummy*/, SqlQueryHolder * holder)
         {
-            if (!holder) return;
+            if (!holder)
+                return;
             WorldSession *session = sWorld.FindSession(((LoginQueryHolder*)holder)->GetAccountId());
             if (!session)
             {
@@ -132,10 +132,8 @@ class CharacterHandler
 
 void WorldSession::HandleCharEnum(QueryResult_AutoPtr result)
 {
-    WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
-
+    WorldPacket data(SMSG_CHAR_ENUM, 100); // we guess size
     uint8 num = 0;
-
     data << num;
 
     if (result)
@@ -191,11 +189,10 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket & recv_data)
     uint8 race_,class_;
 
     recv_data >> name;
-
     recv_data >> race_;
     recv_data >> class_;
 
-    WorldPacket data(SMSG_CHAR_CREATE, 1);                  // returned with diff.values in all cases
+    WorldPacket data(SMSG_CHAR_CREATE, 1); // returned with diff.values in all cases
 
     if (GetSecurity() == SEC_PLAYER)
     {
@@ -204,10 +201,14 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket & recv_data)
             bool disabled = false;
 
             uint32 team = Player::TeamForRace(race_);
-            switch(team)
+            switch (team)
             {
-                case ALLIANCE: disabled = mask & (1<<0); break;
-                case HORDE:    disabled = mask & (1<<1); break;
+                case ALLIANCE:
+                    disabled = mask & (1<<0);
+                    break;
+                case HORDE:
+                    disabled = mask & (1<<1);
+                    break;
             }
 
             if (disabled)

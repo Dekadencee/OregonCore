@@ -17,8 +17,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __WORLDRUNNABLE_H
-#define __WORLDRUNNABLE_H
+#ifndef WORLDRUNNABLE_H
+#define WORLDRUNNABLE_H
 
 // Heartbeat thread for the World
 class WorldRunnable : public ACE_Based::Runnable
@@ -26,5 +26,5 @@ class WorldRunnable : public ACE_Based::Runnable
     public:
         void run();
 };
-#endif
 
+#endif // WORLDRUNNABLE_H

@@ -20,7 +20,7 @@
 #include "Common.h"
 #include "RealmList.h"
 #include "AuthCodes.h"
-#include "Util.h"                                           // for Tokens typedef
+#include "Util.h"                                           // For Tokens typedef
 #include "Database/DatabaseEnv.h"
 
 extern DatabaseType LoginDatabase;
@@ -30,7 +30,7 @@ extern DatabaseType LoginDatabase;
 // list sorted from high to low build and first build used as low bound for accepted by default range (any > it will accepted by realmd at least)
 
 static RealmBuildInfo ExpectedRealmdClientBuilds[] = {
-    {12340, 3, 3, 5, 'a'},                                  // highest supported build, also auto accept all above for simplify future supported builds testing
+    {12340, 3, 3, 5, 'a'},                                  // Highest supported build, also auto accept all above for simplify future supported builds testing
     {11723, 3, 3, 3, 'a'},
     {11403, 3, 3, 2, ' '},
     {11159, 3, 3, 0, 'a'},
@@ -38,26 +38,22 @@ static RealmBuildInfo ExpectedRealmdClientBuilds[] = {
     {8606,  2, 4, 3, ' '},
     {6005,  1,12, 2, ' '},
     {5875,  1,12, 1, ' '},
-    {0,     0, 0, 0, ' '}                                   // terminator
+    {0,     0, 0, 0, ' '}                                   // Terminator
 };
 
 RealmBuildInfo const* FindBuildInfo(uint16 _build)
 {
-    // first build is low bound of always accepted range
+    // First build is low bound of always accepted range
     if (_build >= ExpectedRealmdClientBuilds[0].build)
         return &ExpectedRealmdClientBuilds[0];
 
-    // continue from 1 with explicit equal check
+    // Continue from 1 with explicit equal check
     for (int i = 1; ExpectedRealmdClientBuilds[i].build; ++i)
         if (_build == ExpectedRealmdClientBuilds[i].build)
             return &ExpectedRealmdClientBuilds[i];
 
-    // none appropriate build
+    // None appropriate build
     return NULL;
-}
-
-RealmList::RealmList() : m_UpdateInterval(0), m_NextUpdateTime(time(NULL))
-{
 }
 
 // Load the realm list from the database
@@ -129,7 +125,7 @@ void RealmList::UpdateRealms(bool init)
     sLog.outDetail("Updating Realm List...");
 
     //                                                        0   1     2        3     4     5     6         7                     8           9
-    QueryResult_AutoPtr result = LoginDatabase.Query( "SELECT id, name, address, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE (color & 1) = 0 ORDER BY name" );
+    QueryResult_AutoPtr result = LoginDatabase.Query( "SELECT id, name, address, port, icon, flag, timezone, allowedSecurityLevel, population, gamebuild FROM realmlist WHERE (flag & 1) = 0 ORDER BY name" );
 
     // Circle through results and add them to the realm map
     if (result)
@@ -137,9 +133,7 @@ void RealmList::UpdateRealms(bool init)
         do
         {
             Field *fields = result->Fetch();
-
             uint8 allowedSecurityLevel = fields[7].GetUInt8();
-
             uint8 realmflags = fields[5].GetUInt8();
 
             if (realmflags & ~(REALM_FLAG_OFFLINE|REALM_FLAG_NEW_PLAYERS|REALM_FLAG_RECOMMENDED|REALM_FLAG_SPECIFYBUILD))
@@ -159,4 +153,3 @@ void RealmList::UpdateRealms(bool init)
         } while ( result->NextRow() );
     }
 }
-

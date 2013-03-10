@@ -17,8 +17,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _BUFFEREDSOCKET_H_
-#define _BUFFEREDSOCKET_H_
+#ifndef BUFFEREDSOCKET_H_
+#define BUFFEREDSOCKET_H_
 
 #include <ace/Basic_Types.h>
 #include <ace/Synch_Traits.h>
@@ -26,51 +26,42 @@
 #include <ace/SOCK_Stream.h>
 #include <ace/Message_Block.h>
 #include <ace/Basic_Types.h>
-
 #include <string>
 
 class BufferedSocket: public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 {
-    protected:
-        typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH> Base;
+public:
+    BufferedSocket(void) : input_buffer_(4096), remote_address_("<unknown>") { }
+    virtual ~BufferedSocket(void) { }
 
-        virtual void OnRead(void) { }
-        virtual void OnAccept(void) { }
-        virtual void OnClose(void) { }
+    size_t recv_len(void) const;
+    bool recv_soft(char *buf, size_t len);
+    bool recv(char *buf, size_t len);
+    void recv_skip(size_t len);
 
-    public:
-        BufferedSocket(void);
-        virtual ~BufferedSocket(void);
+    bool send(const char *buf, size_t len);
 
-        size_t recv_len(void) const;
-        bool recv_soft(char *buf, size_t len);
-        bool recv(char *buf, size_t len);
-        void recv_skip(size_t len);
+    const std::string& get_remote_address(void) const;
 
-        bool send(const char *buf, size_t len);
+    virtual int open(void*);
+    void close_connection(void);
 
-        const std::string& get_remote_address(void) const;
+    virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE);
+    virtual int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE);
+    virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE, ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
 
-        virtual int open(void *);
+protected:
+    typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH> Base;
 
-        void close_connection(void);
+    virtual void OnRead(void) { }
+    virtual void OnAccept(void) { }
+    virtual void OnClose(void) { }
 
-        virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE);
-        virtual int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE);
+    std::string remote_address_;
 
-        virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
-
-    private:
-        ssize_t noblk_send(ACE_Message_Block &message_block);
-
-    private:
-        ACE_Message_Block input_buffer_;
-
-    protected:
-        std::string remote_address_;
-
+private:
+    ssize_t noblk_send(ACE_Message_Block &message_block);
+    ACE_Message_Block input_buffer_;
 };
 
-#endif /* _BUFFEREDSOCKET_H_ */
-
+#endif // BUFFEREDSOCKET_H_

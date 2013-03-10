@@ -27,26 +27,24 @@
 
 // stupid ACE define
 #ifdef main
-#undef main
-#endif //main
+#   undef main
+#endif
 
 #if !defined(WINADVAPI)
-#if !defined(_ADVAPI32_)
-#define WINADVAPI DECLSPEC_IMPORT
-#else
-#define WINADVAPI
-#endif
+#   if !defined(_ADVAPI32_)
+#       define WINADVAPI DECLSPEC_IMPORT
+#   else
+#       define WINADVAPI
+#   endif
 #endif
 
 extern int main(int argc, char ** argv);
 extern char serviceLongName[];
 extern char serviceName[];
 extern char serviceDescription[];
-
-extern int m_ServiceStatus;
+extern int ServiceStatus;
 
 SERVICE_STATUS serviceStatus;
-
 SERVICE_STATUS_HANDLE serviceStatusHandle = 0;
 
 typedef WINADVAPI BOOL (WINAPI *CSD_T)(SC_HANDLE, DWORD, LPCVOID);
@@ -153,44 +151,39 @@ void WINAPI ServiceControlHandler(DWORD controlCode)
 {
     switch (controlCode)
     {
-        case SERVICE_CONTROL_INTERROGATE:
+    case SERVICE_CONTROL_INTERROGATE:
+        break;
+    case SERVICE_CONTROL_SHUTDOWN:
+    case SERVICE_CONTROL_STOP:
+        serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+        SetServiceStatus(serviceStatusHandle, &serviceStatus);
+        ServiceStatus = 0;
+        return;
+    case SERVICE_CONTROL_PAUSE:
+        ServiceStatus = 2;
+        serviceStatus.dwCurrentState = SERVICE_PAUSED;
+        SetServiceStatus(serviceStatusHandle, &serviceStatus);
+        break;
+    case SERVICE_CONTROL_CONTINUE:
+        serviceStatus.dwCurrentState = SERVICE_RUNNING;
+        SetServiceStatus(serviceStatusHandle, &serviceStatus);
+        ServiceStatus = 1;
+        break;
+    default:
+        if ( controlCode >= 128 && controlCode <= 255 )
+            // User defined control code
             break;
-
-        case SERVICE_CONTROL_SHUTDOWN:
-        case SERVICE_CONTROL_STOP:
-            serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
-            SetServiceStatus(serviceStatusHandle, &serviceStatus);
-
-            m_ServiceStatus = 0;
-            return;
-
-        case SERVICE_CONTROL_PAUSE:
-            m_ServiceStatus = 2;
-            serviceStatus.dwCurrentState = SERVICE_PAUSED;
-            SetServiceStatus(serviceStatusHandle, &serviceStatus);
+        else
+            // Unrecognized control code
             break;
-
-        case SERVICE_CONTROL_CONTINUE:
-            serviceStatus.dwCurrentState = SERVICE_RUNNING;
-            SetServiceStatus(serviceStatusHandle, &serviceStatus);
-            m_ServiceStatus = 1;
-            break;
-
-        default:
-            if ( controlCode >= 128 && controlCode <= 255 )
-                // user defined control code
-                break;
-            else
-                // unrecognized control code
-                break;
     }
 
     SetServiceStatus(serviceStatusHandle, &serviceStatus);
 }
 
-void WINAPI ServiceMain(DWORD argc, char *argv[])
+void WINAPI ServiceMain(DWORD argc, char* argv[])
 {
-    // initialise service status
+    // Initialise service status
     serviceStatus.dwServiceType = SERVICE_WIN32;
     serviceStatus.dwCurrentState = SERVICE_START_PENDING;
     serviceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
@@ -201,7 +194,7 @@ void WINAPI ServiceMain(DWORD argc, char *argv[])
 
     serviceStatusHandle = RegisterServiceCtrlHandler(serviceName, ServiceControlHandler);
 
-    if ( serviceStatusHandle )
+    if (serviceStatusHandle)
     {
         char path[_MAX_PATH + 1];
         unsigned int i, last_slash = 0;
@@ -209,37 +202,36 @@ void WINAPI ServiceMain(DWORD argc, char *argv[])
         GetModuleFileName(0, path, sizeof(path)/sizeof(path[0]));
 
         for (i = 0; i < std::strlen(path); i++)
-        {
-            if (path[i] == '\\') last_slash = i;
-        }
+            if (path[i] == '\\')
+				last_slash = i;
 
         path[last_slash] = 0;
 
-        // service is starting
+        // Service is starting
         serviceStatus.dwCurrentState = SERVICE_START_PENDING;
         SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
-        // do initialisation here
+        // Do initialisation here
         SetCurrentDirectory(path);
 
-        // running
+        // Running
         serviceStatus.dwControlsAccepted |= (SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
         serviceStatus.dwCurrentState = SERVICE_RUNNING;
         SetServiceStatus( serviceStatusHandle, &serviceStatus );
 
-        // service main cycle
+        // Service main cycle
 
-        m_ServiceStatus = 1;
+        ServiceStatus = 1;
         argc = 1;
-        main(argc , argv);
+        main(argc, argv);
 
-        // service was stopped
+        // Service was stopped
         serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
         SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
-        // do cleanup here
+        // Do cleanup here
 
-        // service is now stopped
+        // Service is now stopped
         serviceStatus.dwControlsAccepted &= ~(SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
         serviceStatus.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus(serviceStatusHandle, &serviceStatus);
@@ -261,5 +253,5 @@ bool WinServiceRun()
     }
     return true;
 }
-#endif
 
+#endif

@@ -21,22 +21,20 @@
 #include "AuthCodes.h"
 #include "Log.h"
 #include "Common.h"
-
 #include <ace/OS_NS_sys_socket.h>
 #include <ace/OS_NS_dirent.h>
 #include <ace/OS_NS_errno.h>
 #include <ace/OS_NS_unistd.h>
-
 #include <ace/os_include/netinet/os_tcp.h>
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
+#   define MSG_NOSIGNAL 0
 #endif
 
 #if defined( __GNUC__ )
-#pragma pack(1)
+#   pragma pack(1)
 #else
-#pragma pack(push,1)
+#   pragma pack(push,1)
 #endif
 
 struct Chunk
@@ -47,9 +45,9 @@ struct Chunk
 };
 
 #if defined( __GNUC__ )
-#pragma pack()
+#   pragma pack()
 #else
-#pragma pack(pop)
+#   pragma pack(pop)
 #endif
 
 PatchHandler::PatchHandler(ACE_HANDLE socket, ACE_HANDLE patch)
@@ -71,24 +69,14 @@ int PatchHandler::open(void*)
         return -1;
 
     int nodelay = 0;
-    if (-1 == peer().set_option(ACE_IPPROTO_TCP,
-                TCP_NODELAY,
-                &nodelay,
-                sizeof(nodelay)))
-    {
+    if (-1 == peer().set_option(ACE_IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)))
         return -1;
-    }
 
-#if defined(TCP_CORK)
+    #if defined(TCP_CORK)
     int cork = 1;
-    if (-1 == peer().set_option(ACE_IPPROTO_TCP,
-                TCP_CORK,
-                &cork,
-                sizeof(cork)))
-    {
+    if (-1 == peer().set_option(ACE_IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork)))
         return -1;
-    }
-#endif // TCP_CORK
+    #endif // TCP_CORK
 
     (void) peer().disable(ACE_NONBLOCK);
 
@@ -102,28 +90,20 @@ int PatchHandler::svc(void)
     ACE_OS::sleep(1);
 
     int flags = MSG_NOSIGNAL;
-
     Chunk data;
     data.cmd = CMD_XFER_DATA;
-
     ssize_t r;
 
     while((r = ACE_OS::read(patch_fd_, data.data, sizeof(data.data))) > 0)
     {
         data.data_size = (ACE_UINT16)r;
 
-        if (peer().send((const char*)&data,
-                    ((size_t) r) + sizeof(data) - sizeof(data.data),
-                    flags) == -1)
-        {
+        if (peer().send((const char*)&data, ((size_t) r) + sizeof(data) - sizeof(data.data), flags) == -1)
             return -1;
-        }
     }
 
     if (r == -1)
-    {
         return -1;
-    }
 
     return 0;
 }
@@ -176,7 +156,7 @@ void PatchCache::LoadPatchMD5(const char* szFileName)
     MD5_Final((ACE_UINT8 *) & patches_[path]->md5, &ctx);
 }
 
-bool PatchCache::GetHash(const char * pat, ACE_UINT8 mymd5[MD5_DIGEST_LENGTH])
+bool PatchCache::GetHash(const char* pat, ACE_UINT8 mymd5[MD5_DIGEST_LENGTH])
 {
     for (Patches::iterator i = patches_.begin (); i != patches_.end (); i++)
         if (!stricmp(pat, i->first.c_str ()))
@@ -209,4 +189,3 @@ void PatchCache::LoadPatchesInfo()
 
     ACE_OS::closedir(dirp);
 }
-

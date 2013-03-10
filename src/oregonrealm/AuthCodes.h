@@ -17,8 +17,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _AUTHCODES_H
-#define _AUTHCODES_H
+#ifndef AUTHCODES_H
+#define AUTHCODES_H
 
 enum eAuthCmd
 {
@@ -73,5 +73,4 @@ enum AuthResult
     WOW_FAIL_TRIAL_ENDED            = 0x11,                 ///< Your trial subscription has expired. Please visit <site> to upgrade your account.
 };
 
-#endif
-
+#endif // AUTHCODES_H

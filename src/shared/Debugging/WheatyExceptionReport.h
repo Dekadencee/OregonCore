@@ -1,15 +1,15 @@
-#ifndef _WHEATYEXCEPTIONREPORT_
-#define _WHEATYEXCEPTIONREPORT_
+#ifndef WHEATYEXCEPTIONREPORT_H
+#define WHEATYEXCEPTIONREPORT_H
 
 #if PLATFORM == PLATFORM_WINDOWS
 
 #include <dbghelp.h>
 
 #if _MSC_VER < 1400
-#   define countof(array)   (sizeof(array) / sizeof(array[0]))
+#   define countof(array) (sizeof(array) / sizeof(array[0]))
 #else
 #   include <stdlib.h>
-#   define countof  _countof
+#   define countof _countof
 #endif                                                      // _MSC_VER < 1400
 
 enum BasicType                                              // Stolen from CVCONST.H in the DIA 2.0 SDK
@@ -72,52 +72,52 @@ const char* const rgBaseType[] =
 
 class WheatyExceptionReport
 {
-    public:
+public:
+    WheatyExceptionReport();
+    ~WheatyExceptionReport();
 
-        WheatyExceptionReport();
-        ~WheatyExceptionReport();
+    // entry point where control comes on an unhandled exception
+    static LONG WINAPI WheatyUnhandledExceptionFilter(
+        PEXCEPTION_POINTERS pExceptionInfo);
 
-        // entry point where control comes on an unhandled exception
-        static LONG WINAPI WheatyUnhandledExceptionFilter(
-            PEXCEPTION_POINTERS pExceptionInfo);
+    static void printTracesForAllThreads();
 
-        static void printTracesForAllThreads();
-    private:
-        // where report info is extracted and generated
-        static void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo);
-        static void PrintSystemInfo();
-        static BOOL _GetWindowsVersion(TCHAR* szVersion, DWORD cntMax);
-        static BOOL _GetProcessorName(TCHAR* sProcessorName, DWORD maxcount);
+private:
+    // where report info is extracted and generated
+    static void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo);
+    static void PrintSystemInfo();
+    static BOOL _GetWindowsVersion(TCHAR* szVersion, DWORD cntMax);
+    static BOOL _GetProcessorName(TCHAR* sProcessorName, DWORD maxcount);
 
-        // Helper functions
-        static LPTSTR GetExceptionString(DWORD dwCode);
-        static BOOL GetLogicalAddress(PVOID addr, PTSTR szModule, DWORD len,
-            DWORD& section, DWORD_PTR& offset);
+    // Helper functions
+    static LPTSTR GetExceptionString(DWORD dwCode);
+    static BOOL GetLogicalAddress(PVOID addr, PTSTR szModule, DWORD len,
+        DWORD& section, DWORD_PTR& offset);
 
-        static void WriteStackDetails(PCONTEXT pContext, bool bWriteVariables, HANDLE pThreadHandle);
+    static void WriteStackDetails(PCONTEXT pContext, bool bWriteVariables, HANDLE pThreadHandle);
 
-        static BOOL CALLBACK EnumerateSymbolsCallback(PSYMBOL_INFO,ULONG, PVOID);
+    static BOOL CALLBACK EnumerateSymbolsCallback(PSYMBOL_INFO,ULONG, PVOID);
 
-        static bool FormatSymbolValue(PSYMBOL_INFO, STACKFRAME *, char * pszBuffer, unsigned cbBuffer);
+    static bool FormatSymbolValue(PSYMBOL_INFO, STACKFRAME *, char * pszBuffer, unsigned cbBuffer);
 
-        static char * DumpTypeIndex(char *, DWORD64, DWORD, unsigned, DWORD_PTR, bool & , char*);
+    static char * DumpTypeIndex(char *, DWORD64, DWORD, unsigned, DWORD_PTR, bool & , char*);
 
-        static char * FormatOutputValue(char * pszCurrBuffer, BasicType basicType, DWORD64 length, PVOID pAddress);
+    static char * FormatOutputValue(char * pszCurrBuffer, BasicType basicType, DWORD64 length, PVOID pAddress);
 
-        static BasicType GetBasicType(DWORD typeIndex, DWORD64 modBase);
+    static BasicType GetBasicType(DWORD typeIndex, DWORD64 modBase);
 
-        static int __cdecl _tprintf(const TCHAR * format, ...);
+    static int __cdecl _tprintf(const TCHAR * format, ...);
 
-        // Variables used by the class
-        static TCHAR m_szLogFileName[MAX_PATH];
-        static TCHAR m_szDumpFileName[MAX_PATH];
-        static LPTOP_LEVEL_EXCEPTION_FILTER m_previousFilter;
-        static HANDLE m_hReportFile;
-        static HANDLE m_hDumpFile;
-        static HANDLE m_hProcess;
+    // Variables used by the class
+    static TCHAR m_szLogFileName[MAX_PATH];
+    static TCHAR m_szDumpFileName[MAX_PATH];
+    static LPTOP_LEVEL_EXCEPTION_FILTER m_previousFilter;
+    static HANDLE m_hReportFile;
+    static HANDLE m_hDumpFile;
+    static HANDLE m_hProcess;
 };
 
-extern WheatyExceptionReport g_WheatyExceptionReport;       //  global instance of class
-#endif                                                      // _WIN32
-#endif                                                      // _WHEATYEXCEPTIONREPORT_
+extern WheatyExceptionReport g_WheatyExceptionReport; // Global instance of class
 
+#endif // _WIN32
+#endif // WHEATYEXCEPTIONREPORT_H

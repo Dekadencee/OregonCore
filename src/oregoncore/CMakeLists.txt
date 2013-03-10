@@ -45,7 +45,7 @@ set(oregon-core_LINK_FLAGS "")
 add_executable(oregon-core ${oregon-core_SRCS})
 
 if( NOT WIN32 )
-  add_definitions(-D_OREGON_CORE_CONFIG="${CONF_DIR}/oregoncore.conf")
+  add_definitions(-D_OREGON_CORE_CONFIG="${CONF_DIR}/oregonworld.conf")
 endif()
 
 add_dependencies(oregon-core revision.h)
@@ -78,14 +78,14 @@ target_link_libraries(oregon-core
 if( WIN32 )
   add_custom_command(TARGET oregon-core
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/oregoncore.conf.dist ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/oregonworld.conf.dist ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/
   )
 endif()
 
 if( UNIX )
   install(TARGETS oregon-core DESTINATION bin)
-  install(FILES oregoncore.conf.dist DESTINATION etc)
+  install(FILES oregonworld.conf.dist DESTINATION etc)
 elseif( WIN32 )
   install(TARGETS oregon-core DESTINATION "${CMAKE_INSTALL_PREFIX}")
-  install(FILES oregoncore.conf.dist DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  install(FILES oregonworld.conf.dist DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()

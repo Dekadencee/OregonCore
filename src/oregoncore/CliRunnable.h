@@ -17,8 +17,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __CLIRUNNABLE_H
-#define __CLIRUNNABLE_H
+#ifndef CLIRUNNABLE_H
+#define CLIRUNNABLE_H
 
 // Command Line Interface handling thread
 class CliRunnable : public ACE_Based::Runnable
@@ -26,5 +26,5 @@ class CliRunnable : public ACE_Based::Runnable
     public:
         void run();
 };
-#endif
 
+#endif // CLIRUNNABLE_H

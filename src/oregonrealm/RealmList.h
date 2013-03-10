@@ -17,8 +17,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _REALMLIST_H
-#define _REALMLIST_H
+#ifndef REALMLIST_H
+#define REALMLIST_H
 
 #include <ace/Singleton.h>
 #include <ace/Null_Mutex.h>
@@ -42,13 +42,13 @@ struct Realm
 {
     std::string address;
     uint8 icon;
-    RealmFlags realmflags;                                  // realmflags
+    RealmFlags realmflags;
     uint8 timezone;
     uint32 m_ID;
-    AccountTypes allowedSecurityLevel;                      // current allowed join security level (show as locked for not fit accounts)
+    AccountTypes allowedSecurityLevel; // current allowed join security level (show as locked for not fit accounts)
     float populationLevel;
-    RealmBuilds realmbuilds;                                // list of supported builds (updated in DB by mangosd)
-    RealmBuildInfo realmBuildInfo;                          // build info for show version in list
+    RealmBuilds realmbuilds;           // list of supported builds (updated in DB by mangosd)
+    RealmBuildInfo realmBuildInfo;     // build info for show version in list
 };
 
 // Storage object for the list of realms on the server
@@ -60,7 +60,7 @@ class RealmList
 
         typedef std::map<std::string, Realm> RealmMap;
 
-        RealmList();
+        RealmList() : m_UpdateInterval(0), m_NextUpdateTime(time(NULL)) { }
         ~RealmList() {}
 
         void Initialize(uint32 updateInterval);
@@ -72,14 +72,14 @@ class RealmList
         uint32 size() const { return m_realms.size(); }
     private:
         void UpdateRealms(bool init);
-        void UpdateRealm( uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, RealmFlags realmflags, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, const char* builds);
+        void UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, RealmFlags realmflags, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, const char* builds);
+
     private:
-        RealmMap m_realms;                                  ///< Internal map of realms
-        uint32   m_UpdateInterval;
-        time_t   m_NextUpdateTime;
+        RealmMap m_realms;       ///< Internal map of realms
+        uint32 m_UpdateInterval;
+        time_t m_NextUpdateTime;
 };
 
 #define sRealmList RealmList::instance()
 
-#endif
-
+#endif // REALMLIST_H

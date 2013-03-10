@@ -18,26 +18,15 @@
  */
 
 #include "BufferedSocket.h"
-
 #include <ace/OS_NS_string.h>
 #include <ace/INET_Addr.h>
 #include <ace/SString.h>
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
+#   define MSG_NOSIGNAL 0
 #endif
 
-BufferedSocket::BufferedSocket(void):
-    input_buffer_(4096),
-    remote_address_("<unknown>")
-{
-}
-
-/*virtual*/ BufferedSocket::~BufferedSocket(void)
-{
-}
-
-/*virtual*/ int BufferedSocket::open(void * arg)
+int BufferedSocket::open(void* arg)
 {
     if (Base::open(arg) == -1)
         return -1;
@@ -68,7 +57,7 @@ size_t BufferedSocket::recv_len(void) const
     return this->input_buffer_.length();
 }
 
-bool BufferedSocket::recv_soft(char *buf, size_t len)
+bool BufferedSocket::recv_soft(char* buf, size_t len)
 {
     if (this->input_buffer_.length() < len)
         return false;
@@ -78,7 +67,7 @@ bool BufferedSocket::recv_soft(char *buf, size_t len)
     return true;
 }
 
-bool BufferedSocket::recv(char *buf, size_t len)
+bool BufferedSocket::recv(char* buf, size_t len)
 {
     bool ret = this->recv_soft(buf, len);
 
@@ -93,7 +82,7 @@ void BufferedSocket::recv_skip(size_t len)
     this->input_buffer_.rd_ptr(len);
 }
 
-ssize_t BufferedSocket::noblk_send(ACE_Message_Block &message_block)
+ssize_t BufferedSocket::noblk_send(ACE_Message_Block& message_block)
 {
     const size_t len = message_block.length();
 
@@ -122,24 +111,13 @@ ssize_t BufferedSocket::noblk_send(ACE_Message_Block &message_block)
     return n;
 }
 
-bool BufferedSocket::send(const char *buf, size_t len)
+bool BufferedSocket::send(const char* buf, size_t len)
 {
     if (buf == NULL || len == 0)
         return true;
 
-    ACE_Data_Block db(
-            len,
-            ACE_Message_Block::MB_DATA,
-            (const char*)buf,
-            0,
-            0,
-            ACE_Message_Block::DONT_DELETE,
-            0);
-
-    ACE_Message_Block message_block(
-            &db,
-            ACE_Message_Block::DONT_DELETE,
-            0);
+    ACE_Data_Block db(len, ACE_Message_Block::MB_DATA, (const char*)buf, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
+    ACE_Message_Block message_block(&db, ACE_Message_Block::DONT_DELETE, 0);
 
     message_block.wr_ptr(len);
 
@@ -153,13 +131,13 @@ bool BufferedSocket::send(const char *buf, size_t len)
         else if (size_t(n) == len)
             return true;
 
-        // adjust how much bytes we sent
+        // Adjust how much bytes we sent
         message_block.rd_ptr((size_t)n);
 
-        // fall down
+        // Fall down
     }
 
-    // enqueue the message, note: clone is needed cause we cant enqueue stuff on the stack
+    // Enqueue the message, note: clone is needed cause we cant enqueue stuff on the stack
     ACE_Message_Block *mb = message_block.clone();
 
     if (this->msg_queue()->enqueue_tail(mb, (ACE_Time_Value *) &ACE_Time_Value::zero) == -1)
@@ -168,16 +146,16 @@ bool BufferedSocket::send(const char *buf, size_t len)
         return false;
     }
 
-    // tell reactor to call handle_output() when we can send more data
+    // Tell reactor to call handle_output() when we can send more data
     if (this->reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
         return false;
 
     return true;
 }
 
-/*virtual*/ int BufferedSocket::handle_output(ACE_HANDLE /*= ACE_INVALID_HANDLE*/)
+int BufferedSocket::handle_output(ACE_HANDLE /*= ACE_INVALID_HANDLE*/)
 {
-    ACE_Message_Block *mb = 0;
+    ACE_Message_Block* mb = 0;
 
     if (this->msg_queue()->is_empty())
     {
@@ -217,7 +195,7 @@ bool BufferedSocket::send(const char *buf, size_t len)
     ACE_NOTREACHED(return -1);
 }
 
-/*virtual*/ int BufferedSocket::handle_input(ACE_HANDLE /*= ACE_INVALID_HANDLE*/)
+int BufferedSocket::handle_input(ACE_HANDLE /*= ACE_INVALID_HANDLE*/)
 {
     const ssize_t space = this->input_buffer_.space();
 
@@ -245,12 +223,10 @@ bool BufferedSocket::send(const char *buf, size_t len)
     return n == space ? 1 : 0;
 }
 
-/*virtual*/ int BufferedSocket::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
+int BufferedSocket::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
 {
     this->OnClose();
-
     Base::handle_close();
-
     return 0;
 }
 
@@ -259,4 +235,3 @@ void BufferedSocket::close_connection(void)
     this->peer().close_reader();
     this->peer().close_writer();
 }
-

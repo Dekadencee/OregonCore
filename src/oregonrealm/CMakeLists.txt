@@ -43,7 +43,7 @@ add_executable(oregon-realm
 add_dependencies(oregon-realm revision.h)
 
 if( NOT WIN32 )
-  add_definitions(-D_OREGON_REALM_CONFIG="${CONF_DIR}/oregonrealm.conf")
+  add_definitions(-D_OREGON_REALM_CONFIG="${CONF_DIR}/oregonauth.conf")
 endif()
 
 if( UNIX )
@@ -68,14 +68,14 @@ target_link_libraries(oregon-realm
 if( WIN32 )
   add_custom_command(TARGET oregon-realm
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/oregonrealm.conf.dist ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/oregonauth.conf.dist ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/
   )
 endif()
 
 if( UNIX )
   install(TARGETS oregon-realm DESTINATION bin)
-  install(FILES oregonrealm.conf.dist DESTINATION etc)
+  install(FILES oregonauth.conf.dist DESTINATION etc)
 elseif( WIN32 )
   install(TARGETS oregon-realm DESTINATION "${CMAKE_INSTALL_PREFIX}")
-  install(FILES oregonrealm.conf.dist DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  install(FILES oregonauth.conf.dist DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()

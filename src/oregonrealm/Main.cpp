@@ -20,13 +20,11 @@
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "RealmList.h"
-
 #include "Config/Config.h"
 #include "Log.h"
 #include "AuthSocket.h"
 #include "SystemConfig.h"
 #include "Util.h"
-
 #include <ace/Get_Opt.h>
 #include <ace/Dev_Poll_Reactor.h>
 #include <ace/TP_Reactor.h>
@@ -34,40 +32,39 @@
 #include <ace/Acceptor.h>
 #include <ace/SOCK_Acceptor.h>
 
-// Format is YYYYMMDDRR where RR is the change in the conf file
-// for that day.
-#ifndef _REALMDCONFVERSION
-# define _REALMDCONFVERSION 2010101001
+#ifndef OREGON_AUTH_CONFIG
+#   define OREGON_AUTH_CONFIG "oregonauth.conf"
 #endif
 
-#ifndef _OREGON_REALM_CONFIG
-# define _OREGON_REALM_CONFIG  "oregonrealm.conf"
+// Format is YYYYMMDDRR where RR is the change in the conf file for that day.
+#ifndef OREGON_AUTH_CONFIG_VERSION
+#   define OREGON_AUTH_CONFIG_VERSION 2010101001
 #endif
 
 #ifdef _WIN32
-#include "ServiceWin32.h"
-char serviceName[] = "realmd";
-char serviceLongName[] = "Oregon realm service";
-char serviceDescription[] = "Massive Network Game Object Server";
-/*
- * -1 - not in service mode
- *  0 - stopped
- *  1 - running
- *  2 - paused
- */
-int m_ServiceStatus = -1;
+#   include "ServiceWin32.h"
+
+char serviceName[] = "OregonCore Authentication Server";
+char serviceLongName[] = "OregonCore authentication service";
+char serviceDescription[] = "OregonCore World of Warcraft emulator authentication service";
+
+// -1 Not in service mode
+//  0 Stoped
+//  1 Running
+//  2 Paused
+int ServiceStatus = -1;
+
 #endif
 
-bool StartDB();
-void UnhookSignals();
+bool StartDatabase();
 void HookSignals();
+void UnhookSignals();
 
-bool stopEvent = false;                                     // Setting it to true stops the server
-
-DatabaseType LoginDatabase;                                 // Accessor to the realm server database
+bool StopEvent = false;     // Setting it to true stops the server
+DatabaseType LoginDatabase; // Accessor to the realm server database
 
 // Print out the usage string for this program on the console.
-void usage(const char *prog)
+void usage(const char* prog)
 {
     sLog.outString("Usage: \n %s [<options>]\n"
         "    -v, --version            print version and exit\n\r"
@@ -78,20 +75,19 @@ void usage(const char *prog)
         "    -s install               install service\n\r"
         "    -s uninstall             uninstall service\n\r"
         #endif
-        ,prog);
+        , prog);
 }
 
-// Launch the realm server
-extern int main(int argc, char **argv)
+extern int main(int argc, char** argv)
 {
     // Command line parsing
-    char const* cfg_file = _OREGON_REALM_CONFIG;
+    char const* cfg_file = OREGON_AUTH_CONFIG;
 
-#ifdef _WIN32
-    char const *options = ":c:s:";
-#else
-    char const *options = ":c:";
-#endif
+    #ifdef _WIN32
+    char const* options = ":c:s:";
+    #else
+    char const* options = ":c:";
+    #endif
 
     ACE_Get_Opt cmd_opts(argc, argv, options);
     cmd_opts.long_option("version", 'v');
@@ -101,48 +97,48 @@ extern int main(int argc, char **argv)
     {
         switch (option)
         {
-            case 'c':
-                cfg_file = cmd_opts.opt_arg();
-                break;
-            case 'v':
-                printf("%s\n", _FULLVERSION);
-                return 0;
-#ifdef _WIN32
-            case 's':
-            {
-                const char *mode = cmd_opts.opt_arg();
+        case 'c':
+            cfg_file = cmd_opts.opt_arg();
+            break;
+        case 'v':
+            printf("%s\n", _FULLVERSION);
+            return 0;
+        #ifdef _WIN32
+        case 's':
+        {
+            const char *mode = cmd_opts.opt_arg();
 
-                if (!strcmp(mode, "install"))
-                {
-                    if (WinServiceInstall())
-                        sLog.outString("Installing service");
-                    return 1;
-                }
-                else if (!strcmp(mode, "uninstall"))
-                {
-                    if (WinServiceUninstall())
-                        sLog.outString("Uninstalling service");
-                    return 1;
-                }
-                else if (!strcmp(mode, "run"))
-                    WinServiceRun();
-                else
-                {
-                    sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
-                    usage(argv[0]);
-                    return 1;
-                }
-                break;
+            if (!strcmp(mode, "install"))
+            {
+                if (WinServiceInstall())
+                    sLog.outString("Installing service");
+                return 1;
             }
-#endif
-            case ':':
-                sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
+            else if (!strcmp(mode, "uninstall"))
+            {
+                if (WinServiceUninstall())
+                    sLog.outString("Uninstalling service");
+                return 1;
+            }
+            else if (!strcmp(mode, "run"))
+                WinServiceRun();
+            else
+            {
+                sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
                 usage(argv[0]);
                 return 1;
-            default:
-                sLog.outError("Runtime-Error: bad format of commandline arguments");
-                usage(argv[0]);
-                return 1;
+            }
+            break;
+        }
+        #endif
+        case ':':
+            sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
+            usage(argv[0]);
+            return 1;
+        default:
+            sLog.outError("Runtime-Error: bad format of commandline arguments");
+            usage(argv[0]);
+            return 1;
         }
     }
 
@@ -160,25 +156,24 @@ extern int main(int argc, char **argv)
 
     // Check the version of the configuration file
     uint32 confVersion = sConfig.GetIntDefault("ConfVersion", 0);
-    if (confVersion < _REALMDCONFVERSION)
+    if (confVersion < OREGON_AUTH_CONFIG_VERSION)
     {
         sLog.outError("*****************************************************************************");
-        sLog.outError(" WARNING: Your oregonrealm.conf version indicates your conf file is out of date!");
+        sLog.outError(" WARNING: Your oregonauth.conf version indicates your conf file is out of date!");
         sLog.outError("          Please check for updates, as your current default values may cause");
         sLog.outError("          strange behavior.");
         sLog.outError("*****************************************************************************");
         clock_t pause = 3000 + clock();
-
         while (pause > clock()) {}
     }
 
     sLog.outDetail("Using ACE: %s", ACE_VERSION);
 
-#if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
+    #if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
     ACE_Reactor::instance(new ACE_Reactor(new ACE_Dev_Poll_Reactor(ACE::max_handles(), 1), 1), true);
-#else
+    #else
     ACE_Reactor::instance(new ACE_Reactor(new ACE_TP_Reactor(), true), true);
-#endif
+    #endif
 
     sLog.outBasic("Max allowed open files is %d", ACE::max_handles());
 
@@ -197,7 +192,7 @@ extern int main(int argc, char **argv)
     }
 
     // Initialize the database connection
-    if (!StartDB())
+    if (!StartDatabase())
         return 1;
 
     // Get the list of realms for the server
@@ -208,19 +203,16 @@ extern int main(int argc, char **argv)
         return 1;
     }
 
-    // cleanup query
-    // set expired bans to inactive
+    // Cleanup query
+    // Set expired bans to inactive
     LoginDatabase.Execute("UPDATE account_banned SET active = 0 WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
     LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
 
     // Launch the listening network socket
     ACE_Acceptor<AuthSocket, ACE_SOCK_Acceptor> acceptor;
-
     uint16 rmport = sConfig.GetIntDefault("RealmServerPort", DEFAULT_REALMSERVER_PORT);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
-
     ACE_INET_Addr bind_addr(rmport, bind_ip.c_str());
-
     if (acceptor.open(bind_addr, ACE_Reactor::instance(), ACE_NONBLOCK) == -1)
     {
         sLog.outError("realmd can not bind to %s:%d", bind_ip.c_str(), rmport);
@@ -243,26 +235,20 @@ extern int main(int argc, char **argv)
 
             if (GetProcessAffinityMask(hProcess,&appAff,&sysAff))
             {
-                ULONG_PTR curAff = Aff & appAff;            // remove non accessible processors
+                ULONG_PTR curAff = Aff & appAff; // remove non accessible processors
 
                 if (!curAff )
-                {
                     sLog.outError("Processors marked in UseProcessors bitmask (hex) %x not accessible for realmd. Accessible processors bitmask (hex): %x",Aff,appAff);
-                }
                 else
-                {
                     if (SetProcessAffinityMask(hProcess,curAff))
                         sLog.outString("Using processors (bitmask, hex): %x", curAff);
                     else
                         sLog.outError("Can't set used processors (hex): %x", curAff);
-                }
             }
             sLog.outString();
         }
 
-        bool Prio = sConfig.GetBoolDefault("ProcessPriority", false);
-
-        if (Prio)
+        if (sConfig.GetBoolDefault("ProcessPriority", false))
         {
             if (SetPriorityClass(hProcess,HIGH_PRIORITY_CLASS))
                 sLog.outString("realmd process priority class set to HIGH");
@@ -273,12 +259,12 @@ extern int main(int argc, char **argv)
     }
     #endif
 
-    // maximum counter for next ping
-    uint32 numLoops = (sConfig.GetIntDefault( "MaxPingTime", 30 ) * (MINUTE * 1000000 / 100000));
-    uint32 loopCounter = 0;
+    // Maximum counter for next ping
+    uint32 number_loops = (sConfig.GetIntDefault( "MaxPingTime", 30 ) * (MINUTE * 1000000 / 100000));
+    uint32 loop_counter = 0;
 
     // Wait for termination signal
-    while (!stopEvent)
+    while (!StopEvent)
     {
         // dont move this outside the loop, the reactor will modify it
         ACE_Time_Value interval(0, 100000);
@@ -286,16 +272,18 @@ extern int main(int argc, char **argv)
         if (ACE_Reactor::instance()->run_reactor_event_loop(interval) == -1)
             break;
 
-        if ( (++loopCounter) == numLoops )
+        if ((++loop_counter) == number_loops)
         {
-            loopCounter = 0;
+            loop_counter = 0;
             sLog.outDetail("Ping MySQL to keep connection alive");
             LoginDatabase.Query("SELECT 1 FROM realmlist LIMIT 1");
         }
-#ifdef _WIN32
-        if (m_ServiceStatus == 0) stopEvent = true;
-        while (m_ServiceStatus == 2) Sleep(1000);
-#endif
+        #ifdef _WIN32
+        if (ServiceStatus == 0)
+			StopEvent = true;
+        while (ServiceStatus == 2)
+			Sleep(1000);
+        #endif
     }
 
     // Wait for the delay thread to exit
@@ -308,28 +296,8 @@ extern int main(int argc, char **argv)
     return 0;
 }
 
-// Handle termination signals
-/** Put the global variable stopEvent to 'true' if a termination signal is caught **/
-void OnSignal(int s)
-{
-    switch (s)
-    {
-        case SIGINT:
-        case SIGTERM:
-            stopEvent = true;
-            break;
-        #ifdef _WIN32
-        case SIGBREAK:
-            stopEvent = true;
-            break;
-        #endif
-    }
-
-    signal(s, OnSignal);
-}
-
 // Initialize connection to the database
-bool StartDB()
+bool StartDatabase()
 {
     std::string dbstring = sConfig.GetStringDefault("LoginDatabaseInfo", "");
     if (dbstring.empty())
@@ -346,6 +314,24 @@ bool StartDB()
     }
 
     return true;
+}
+
+// Handle termination signals
+// Put the global variable StopEvent to 'true' if a termination signal is caught
+void OnSignal(int s)
+{
+    switch (s)
+    {
+    case SIGINT:
+    case SIGTERM:
+        StopEvent = true;
+        break;
+    #ifdef _WIN32
+    case SIGBREAK:
+        StopEvent = true;
+        break;
+    #endif
+    }
 }
 
 // Define hook 'OnSignal' for all termination signals
@@ -367,4 +353,3 @@ void UnhookSignals()
     signal(SIGBREAK, 0);
     #endif
 }
-
