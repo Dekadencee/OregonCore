@@ -127,7 +127,7 @@ int Master::Run()
     if (!_StartDB())
         return 1;
 
-	// Set server offline (not connectable)
+    // Set server offline (not connectable)
     LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = (flag & ~%u) | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, REALM_FLAG_INVALID, realmID);
 
     // Initialize the World
@@ -231,10 +231,10 @@ int Master::Run()
         // go down and shutdown the server
     }
 
-	// Set server online (allow connecting now)
+    // Set server online (allow connecting now)
     LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag & ~%u, population = 0 WHERE id = '%u'", REALM_FLAG_INVALID, realmID);
 
-	sLog.outString("%s (worldserver-daemon) ready...", _FULLVERSION);
+    sLog.outString("%s (worldserver-daemon) ready...", _FULLVERSION);
 
     sWorldSocketMgr->Wait();
 
@@ -254,7 +254,7 @@ int Master::Run()
     }
 
     // Set server offline in realmlist
-    LoginDatabase.PExecute("UPDATE realmlist SET color = color | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmID);
+    LoginDatabase.PExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmID);
 
     // Remove signal handling before leaving
     _UnhookSignals();
