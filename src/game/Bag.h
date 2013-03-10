@@ -17,11 +17,12 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OREGON_BAG_H
-#define OREGON_BAG_H
+#ifndef BAG_H
+#define BAG_H
 
-// Maximum 36 Slots ((CONTAINER_END - CONTAINER_FIELD_SLOT_1)/2
-#define MAX_BAG_SIZE 36                                     // 2.0.12
+// 2.0.12
+// Maximum 36 Slots ((CONTAINER_END - CONTAINER_FIELD_SLOT_1) / 2
+#define MAX_BAG_SIZE 36
 
 #include "Item.h"
 #include "ItemPrototype.h"
@@ -61,7 +62,6 @@ class Bag : public Item
         void BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) const;
 
     protected:
-
         // Bag Storage space
         Item* m_bagslot[MAX_BAG_SIZE];
 };
@@ -70,5 +70,6 @@ inline Item* NewItemOrBag(ItemPrototype const * proto)
 {
     return (proto->InventoryType == INVTYPE_BAG) ? new Bag : new Item;
 }
-#endif
+
+#endif /*BAG_H*/
 

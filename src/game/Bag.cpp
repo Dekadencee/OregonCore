@@ -20,7 +20,6 @@
 #include "Common.h"
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
-
 #include "Bag.h"
 #include "Log.h"
 #include "UpdateData.h"
@@ -181,7 +180,6 @@ void Bag::BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) cons
             m_bagslot[i]->BuildCreateUpdateBlockForPlayer(data, target);
 }
 
-// If the bag is empty returns true
 bool Bag::IsEmpty() const
 {
     for (uint32 i = 0; i < GetBagSize(); ++i)

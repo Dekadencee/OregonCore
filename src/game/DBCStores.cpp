@@ -165,15 +165,6 @@ bool IsAcceptableClientBuild(uint32 build)
     return false;
 }
 
-std::string AcceptableClientBuildsListStr()
-{
-    std::ostringstream data;
-    int accepted_versions[] = EXPECTED_OREGONCORE_CLIENT_BUILD;
-    for (int i = 0; accepted_versions[i]; ++i)
-        data << accepted_versions[i] << " ";
-    return data.str();
-}
-
 static bool LoadDBC_assert_print(uint32 fsize,uint32 rsize, const std::string& filename)
 {
     sLog.outError("Size of '%s' setted by format string (%u) not equal size of C++ structure (%u).",filename.c_str(),fsize,rsize);

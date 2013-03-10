@@ -32,7 +32,7 @@ CREATE TABLE `account` (
   `failed_logins` int(11) unsigned NOT NULL default '0',
   `locked` tinyint(3) unsigned NOT NULL default '0',
   `last_login` timestamp NOT NULL default '0000-00-00 00:00:00',
-  `active_realm_id` int(11) unsigned NOT NULL default '0',
+  `online` int(11) unsigned NOT NULL default '0',
   `expansion` tinyint(3) unsigned NOT NULL default '0',
   `mutetime` bigint(40) unsigned NOT NULL default '0',
   `locale` tinyint(3) unsigned NOT NULL default '0',
@@ -106,11 +106,11 @@ CREATE TABLE `realmlist` (
   `address` varchar(32) NOT NULL default '127.0.0.1',
   `port` int(11) NOT NULL default '8085',
   `icon` tinyint(3) unsigned NOT NULL default '0',
-  `realmflags` tinyint(3) unsigned NOT NULL default '0' COMMENT 'Supported masks: 0x1 (invalid, not show in realm list), 0x2 (offline, set by realmd), 0x4 (show version and build), 0x20 (new players), 0x40 (recommended)',
+  `color` tinyint(3) unsigned NOT NULL default '0' COMMENT 'Supported masks: 0x1 (invalid, not show in realm list), 0x2 (offline, set by realmd), 0x4 (show version and build), 0x20 (new players), 0x40 (recommended)',
   `timezone` tinyint(3) unsigned NOT NULL default '0',
   `allowedSecurityLevel` tinyint(3) unsigned NOT NULL default '0',
   `population` float unsigned NOT NULL default '0',
-  `realmbuilds` varchar(64) NOT NULL default '8606',
+  `gamebuild` varchar(64) NOT NULL default '8606',
   PRIMARY KEY  (`id`),
   UNIQUE KEY `idx_name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Realm System';
