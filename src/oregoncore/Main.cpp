@@ -96,6 +96,7 @@ extern int main(int argc, char** argv)
             return 0;
         #ifdef _WIN32
         case 's':
+        {
             const char* mode = cmd_opts.opt_arg();
             if (!strcmp(mode, "install"))
             {
@@ -118,6 +119,7 @@ extern int main(int argc, char** argv)
                 return 1;
             }
             break;
+        }
         #endif
         case ':':
             sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());

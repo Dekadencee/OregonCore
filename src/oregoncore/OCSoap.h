@@ -99,9 +99,10 @@ public:
 
     static void commandFinished(void* callbackArg, bool success);
 
+    std::string m_printBuffer;
+
 private:
     bool m_success;
-    std::string m_printBuffer;
 };
 
 #endif // OREGONSOAP_H
