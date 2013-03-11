@@ -25,20 +25,20 @@
 
 class Master
 {
-    public:
-		Master() { }
-		~Master() { }
+public:
+    Master() { }
+    ~Master() { }
 
-        int Run();
+    int Run();
 
-    private:
-        bool StartDatabase();
+private:
+    bool StartDatabase();
 
-        void HookSignals();
-        void UnhookSignals();
-        static void OnSignal(int s);
+    void HookSignals();
+    void UnhookSignals();
+    static void OnSignal(int s);
 
-        void ClearOnlineAccounts();
+    void ClearOnlineAccounts();
 };
 
 #define sMaster Oregon::Singleton<Master>::Instance()

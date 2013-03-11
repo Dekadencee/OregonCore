@@ -23,8 +23,8 @@
 // Heartbeat thread for the World
 class WorldRunnable : public ACE_Based::Runnable
 {
-    public:
-        void run();
+public:
+    void run();
 };
 
 #endif // WORLDRUNNABLE_H

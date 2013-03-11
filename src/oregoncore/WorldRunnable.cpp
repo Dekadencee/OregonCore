@@ -36,32 +36,32 @@ void WorldRunnable::run()
     WorldDatabase.ThreadStart(); // let thread do safe mySQL requests (one connection call enough)
     sWorld.InitResultQueue();
 
-    uint32 realCurrTime = 0;
-    uint32 realPrevTime = getMSTime();
-    uint32 prevSleepTime = 0; // used for balanced full tick time length near WORLD_SLEEP_CONST
+    uint32 real_curr_time = 0;
+    uint32 real_prev_tTime = getMSTime();
+    uint32 prev_sleep_time = 0; // used for balanced full tick time length near WORLD_SLEEP_CONST
 
     // While we have not World::m_stopEvent, update the world
     while (!World::IsStopped())
     {
         ++World::m_worldLoopCounter;
-        realCurrTime = getMSTime();
+        real_curr_time = getMSTime();
 
-        uint32 diff = getMSTimeDiff(realPrevTime, realCurrTime);
+        uint32 diff = getMSTimeDiff(real_prev_tTime, real_curr_time);
 
         sWorld.Update(diff);
-        realPrevTime = realCurrTime;
+        real_prev_tTime = real_curr_time;
 
         // diff (D0) include time of previous sleep (d0) + tick time (t0)
         // We want that next d1 + t1 == WORLD_SLEEP_CONST
         // We can't know next t1 and then can use (t0 + d1) == WORLD_SLEEP_CONST requirement
         // d1 = WORLD_SLEEP_CONST - t0 = WORLD_SLEEP_CONST - (D0 - d0) = WORLD_SLEEP_CONST + d0 - D0
-        if (diff <= WORLD_SLEEP_CONST + prevSleepTime)
+        if (diff <= WORLD_SLEEP_CONST + prev_sleep_time)
         {
-            prevSleepTime = WORLD_SLEEP_CONST + prevSleepTime-diff;
-            ACE_Based::Thread::Sleep(prevSleepTime);
+            prev_sleep_time = WORLD_SLEEP_CONST + prev_sleep_time-diff;
+            ACE_Based::Thread::Sleep(prev_sleep_time);
         }
         else
-            prevSleepTime = 0;
+            prev_sleep_time = 0;
     }
 
     sWorld.KickAll(); // Save and kick all players

@@ -18,7 +18,6 @@
  */
 
 #include <ace/OS_NS_signal.h>
-
 #include "WorldSocketMgr.h"
 #include "Common.h"
 #include "Master.h"
@@ -47,9 +46,9 @@ INSTANTIATE_SINGLETON_1(Master);
 class FreezeDetectorRunnable : public ACE_Based::Runnable
 {
 public:
-	FreezeDetectorRunnable() : loops_(0), lastchange_(0), delaytime_(0) { }
+    FreezeDetectorRunnable() : loops_(0), lastchange_(0), delaytime_(0) { }
 
-	void run()
+    void run()
     {
         sLog.outString("Starting up anti-freeze thread (%u seconds max stuck time)...", delaytime_ / 1000);
 
@@ -75,7 +74,7 @@ public:
         sLog.outString("Anti-freeze thread exiting without problems.");
     }
 
-	void SetDelayTime(const uint32 t) { delaytime_ = t; }
+    void SetDelayTime(const uint32 t) { delaytime_ = t; }
 
 private:
     uint32 loops_, lastchange_;

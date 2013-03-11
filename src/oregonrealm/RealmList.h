@@ -54,30 +54,30 @@ struct Realm
 // Storage object for the list of realms on the server
 class RealmList
 {
-    public:
-        // Null_Mutex is safe because the singleton initialized before the acceptor initialized(another place where the singleton called)
-        static RealmList* instance() { return ACE_Singleton<RealmList, ACE_Null_Mutex>::instance(); }
+public:
+    // Null_Mutex is safe because the singleton initialized before the acceptor initialized(another place where the singleton called)
+    static RealmList* instance() { return ACE_Singleton<RealmList, ACE_Null_Mutex>::instance(); }
 
-        typedef std::map<std::string, Realm> RealmMap;
+    typedef std::map<std::string, Realm> RealmMap;
 
-        RealmList() : m_UpdateInterval(0), m_NextUpdateTime(time(NULL)) { }
-        ~RealmList() {}
+    RealmList() : m_UpdateInterval(0), m_NextUpdateTime(time(NULL)) { }
+    ~RealmList() {}
 
-        void Initialize(uint32 updateInterval);
+    void Initialize(uint32 updateInterval);
 
-        void UpdateIfNeed();
+    void UpdateIfNeed();
 
-        RealmMap::const_iterator begin() const { return m_realms.begin(); }
-        RealmMap::const_iterator end() const { return m_realms.end(); }
-        uint32 size() const { return m_realms.size(); }
-    private:
-        void UpdateRealms(bool init);
-        void UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, RealmFlags realmflags, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, const char* builds);
+    RealmMap::const_iterator begin() const { return m_realms.begin(); }
+    RealmMap::const_iterator end() const { return m_realms.end(); }
+    uint32 size() const { return m_realms.size(); }
+private:
+    void UpdateRealms(bool init);
+    void UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, RealmFlags realmflags, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, const char* builds);
 
-    private:
-        RealmMap m_realms;       ///< Internal map of realms
-        uint32 m_UpdateInterval;
-        time_t m_NextUpdateTime;
+private:
+    RealmMap m_realms;       ///< Internal map of realms
+    uint32 m_UpdateInterval;
+    time_t m_NextUpdateTime;
 };
 
 #define sRealmList RealmList::instance()

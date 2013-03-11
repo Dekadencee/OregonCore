@@ -97,8 +97,8 @@ int RASocket::recv_line(ACE_Message_Block& buffer)
 
 int RASocket::recv_line(std::string& out_line)
 {
-    char buf[4096];
-    ACE_Data_Block db(sizeof (buf), ACE_Message_Block::MB_DATA, buf, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
+    char buffer[4096];
+    ACE_Data_Block db(sizeof (buffer), ACE_Message_Block::MB_DATA, buffer, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
     ACE_Message_Block message_block(&db, ACE_Message_Block::DONT_DELETE, 0);
 
     if (recv_line(message_block) == -1)
@@ -166,7 +166,7 @@ int RASocket::check_access_level(const std::string& user)
         return -1;
     }
 
-    Field *fields = result->Fetch();
+    Field* fields = result->Fetch();
     if (fields[1].GetUInt32() < iMinLevel)
     {
         sLog.outRemote("User %s has no privilege to login", user.c_str());
@@ -238,15 +238,14 @@ int RASocket::authenticate()
 
 int RASocket::subnegotiate()
 {
-    char buf[1024];
-    ACE_Data_Block db(sizeof (buf), ACE_Message_Block::MB_DATA, buf, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
+    char buffer[1024];
+    ACE_Data_Block db(sizeof (buffer), ACE_Message_Block::MB_DATA, buffer, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
     ACE_Message_Block message_block(&db, ACE_Message_Block::DONT_DELETE, 0);
     const size_t recv_size = message_block.space();
 
     // Wait a maximum of 1000ms for negotiation packet - not all telnet clients may send it
-    ACE_Time_Value waitTime = ACE_Time_Value(1);
-    const ssize_t n = peer().recv(message_block.wr_ptr(),
-        recv_size, &waitTime);
+    ACE_Time_Value wait_time = ACE_Time_Value(1);
+    const ssize_t n = peer().recv(message_block.wr_ptr(), recv_size, &wait_time);
 
     if (n <= 0)
         return int(n);
@@ -257,15 +256,15 @@ int RASocket::subnegotiate()
         return -1;
     }
 
-    buf[n] = '\0';
+    buffer[n] = '\0';
 
     #ifdef _DEBUG
     for (uint8 i = 0; i < n; )
     {
-        uint8 iac = buf[i];
+        uint8 iac = buffer[i];
         if (iac == 0xFF)   // "Interpret as Command" (IAC)
         {
-            uint8 command = buf[++i];
+            uint8 command = buffer[++i];
             std::stringstream ss;
             switch (command)
             {
@@ -285,7 +284,7 @@ int RASocket::subnegotiate()
                 return -1;      // not allowed
             }
 
-            uint8 param = buf[++i];
+            uint8 param = buffer[++i];
             ss << uint32(param);
             sLog.outRemote(ss.str().c_str());
         }
